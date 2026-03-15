@@ -39,7 +39,13 @@ export default function App() {
   const [historicalSummary, setHistoricalSummary] = useState<string>('');
   const [analysis, setAnalysis] = useState<string>('');
   const [historicalAnalysis, setHistoricalAnalysis] = useState<string>('');
-  const [humanStatus, setHumanStatus] = useState<{ climate: string, impact: string, action: string } | null>(null);
+  const [humanStatus, setHumanStatus] = useState<{ 
+    climate: string, 
+    impact: string, 
+    action: string,
+    chaosLevel: number,
+    trend: 'up' | 'down' | 'stable'
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -54,33 +60,43 @@ export default function App() {
         Com base nestes dados:
         Ouro: $${marketData.gold.current}
         Petróleo: $${marketData.oil.current}
+        Gás Natural: $${marketData.naturalGas.current}
+        Cobre: $${marketData.copper.current}
+        Soja: $${marketData.soybeans.current}
         Yields: ${marketData.yields.current}%
         VIX (Medo): ${marketData.vix.current}
         DXY (Dólar): ${marketData.dxy.current}
         
         Gere um RESUMO EXECUTIVO de 2 frases curtas e simples para quem não entende de mercado.
-        Frase 1: O que está acontecendo agora (ex: "O mundo está preocupado com novos conflitos").
-        Frase 2: O que isso significa para o dinheiro das pessoas (ex: "Isso pode fazer os preços subirem em breve").
+        Frase 1: O que está acontecendo agora no mundo das commodities e risco.
+        Frase 2: O que isso significa para o custo de vida e investimentos das pessoas.
       `;
 
       const statusPrompt = `
-        Com base nos dados de mercado (Ouro: $${marketData.gold.current}, Petróleo: $${marketData.oil.current}, Yields: ${marketData.yields.current}%, VIX: ${marketData.vix.current}, DXY: ${marketData.dxy.current}),
-        gere 3 informações curtas e "mastigadas" para um leigo:
+        Com base nos dados de mercado (Ouro: $${marketData.gold.current}, Petróleo: $${marketData.oil.current}, Gás: $${marketData.naturalGas.current}, Metais: ${marketData.copper.current}, Grãos: ${marketData.soybeans.current}, VIX: ${marketData.vix.current}, DXY: ${marketData.dxy.current}),
+        gere um diagnóstico de "Realidade" para um leigo:
         1. Clima Global (ex: "Tenso", "Calmo", "Incerteza")
-        2. Impacto no Bolso (ex: "Gasolina pode subir", "Viagens mais caras", "Preços estáveis")
-        3. Ação Recomendada (ex: "Poupe dinheiro", "Evite dívidas agora", "Mantenha a calma")
+        2. Impacto no Bolso (ex: "Alimentos podem subir", "Energia mais cara", "Preços estáveis")
+        3. Ação Recomendada (ex: "Poupe dinheiro", "Diversifique", "Mantenha a calma")
+        4. Nível de Caos (um número de 0 a 100, onde 0 é paz total e 100 é colapso sistêmico)
+        5. Tendência (escolha entre: "up", "down", "stable")
         
         Retorne APENAS um JSON:
-        { "climate": "texto", "impact": "texto", "action": "texto" }
+        { 
+          "climate": "texto", 
+          "impact": "texto", 
+          "action": "texto", 
+          "chaosLevel": número, 
+          "trend": "up" | "down" | "stable" 
+        }
       `;
 
       const analysisPrompt = `
         Analise os seguintes dados de mercado e forneça um relatório CLARO e CONTEXTUALIZADO com eventos globais atuais:
-        - Ouro: $${marketData.gold.current}
-        - Petróleo: $${marketData.oil.current}
-        - Bond Yields (10Y): ${marketData.yields.current}%
-        - VIX (Índice do Medo): ${marketData.vix.current}
-        - DXY (Índice do Dólar): ${marketData.dxy.current}
+        - Energia: Petróleo $${marketData.oil.current}, Gás Natural $${marketData.naturalGas.current}, Carvão $${marketData.coal.current}
+        - Metais: Ouro $${marketData.gold.current}, Cobre $${marketData.copper.current}, Minério de Ferro $${marketData.ironOre.current}, Lítio $${marketData.lithium.current}
+        - Agrícolas: Soja $${marketData.soybeans.current}, Trigo $${marketData.wheat.current}, Milho $${marketData.corn.current}, Café $${marketData.coffee.current}
+        - Risco: VIX ${marketData.vix.current}, DXY ${marketData.dxy.current}, Yields ${marketData.yields.current}%
         
         REQUISITOS:
         - Explique O PORQUÊ com base em notícias reais de HOJE.
@@ -92,6 +108,8 @@ export default function App() {
         Analise a evolução dos indicadores atuais em comparação com o passado para dar uma perspectiva de longo prazo:
         Ouro: $${marketData.gold.current} (5 anos: ${marketData.gold.change5Years}%)
         Petróleo: $${marketData.oil.current} (5 anos: ${marketData.oil.change5Years}%)
+        Cobre: $${marketData.copper.current} (5 anos: ${marketData.copper.change5Years}%)
+        Soja: $${marketData.soybeans.current} (5 anos: ${marketData.soybeans.change5Years}%)
         Yields: ${marketData.yields.current}% (5 anos: ${marketData.yields.change5Years}%)
         VIX: ${marketData.vix.current} (5 anos: ${marketData.vix.change5Years}%)
         DXY: ${marketData.dxy.current} (5 anos: ${marketData.dxy.change5Years}%)
@@ -128,7 +146,13 @@ export default function App() {
         const cleanStatus = (statusText || '{}').replace(/```json/g, "").replace(/```/g, "").trim();
         setHumanStatus(JSON.parse(cleanStatus));
       } catch (e) {
-        setHumanStatus({ climate: "Indeterminado", impact: "Analisando...", action: "Aguarde" });
+        setHumanStatus({ 
+          climate: "Indeterminado", 
+          impact: "Analisando...", 
+          action: "Aguarde",
+          chaosLevel: 50,
+          trend: 'stable'
+        });
       }
 
     } catch (err) {
@@ -225,47 +249,63 @@ export default function App() {
         </div>
 
         {/* Metrics Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          <MetricCard 
-            title="Ouro (USD)"
-            value={data?.gold.current}
-            unit="$"
-            changes={data?.gold}
-            icon="gold"
-            description="Termômetro do Medo Global"
-          />
-          <MetricCard 
-            title="Petróleo (USD)"
-            value={data?.oil.current}
-            unit="$"
-            changes={data?.oil}
-            icon="oil"
-            description="Custo de Energia e Logística"
-          />
-          <MetricCard 
-            title="Bond Yields (10Y)"
-            value={data?.yields.current}
-            unit="%"
-            changes={data?.yields}
-            icon="yields"
-            description="Confiança no Futuro Econômico"
-          />
-          <MetricCard 
-            title="VIX (Medo)"
-            value={data?.vix.current}
-            unit=""
-            changes={data?.vix}
-            icon="vix"
-            description="Expectativa de Volatilidade"
-          />
-          <MetricCard 
-            title="DXY (Dólar)"
-            value={data?.dxy.current}
-            unit=""
-            changes={data?.dxy}
-            icon="dxy"
-            description="Força da Moeda Global"
-          />
+        <div className="space-y-16">
+          {/* Core Risk Indicators */}
+          <section>
+            <h2 className="text-[10px] font-bold text-white/30 uppercase tracking-[0.4em] mb-8 px-2 flex items-center gap-3">
+              <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+              Indicadores de Risco e Moeda
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <MetricCard title="Ouro (USD)" value={data?.gold.current} unit="$" changes={data?.gold} icon="gold" description="Termômetro do Medo Global" />
+              <MetricCard title="VIX (Medo)" value={data?.vix.current} unit="" changes={data?.vix} icon="vix" description="Expectativa de Volatilidade" />
+              <MetricCard title="DXY (Dólar)" value={data?.dxy.current} unit="" changes={data?.dxy} icon="dxy" description="Força da Moeda Global" />
+              <MetricCard title="Bond Yields (10Y)" value={data?.yields.current} unit="%" changes={data?.yields} icon="yields" description="Confiança no Futuro Econômico" />
+              <MetricCard title="Petróleo (USD)" value={data?.oil.current} unit="$" changes={data?.oil} icon="oil" description="Custo de Energia e Logística" />
+            </div>
+          </section>
+
+          {/* Energy & Industrial */}
+          <section>
+            <h2 className="text-[10px] font-bold text-white/30 uppercase tracking-[0.4em] mb-8 px-2 flex items-center gap-3">
+              <div className="w-1.5 h-1.5 bg-orange-500 rounded-full shadow-[0_0_10px_rgba(249,115,22,0.5)]" />
+              Energia e Indústria
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <MetricCard title="Gás Natural" value={data?.naturalGas.current} unit="$" changes={data?.naturalGas} icon="oil" description="Aquecimento e Indústria" />
+              <MetricCard title="Carvão" value={data?.coal.current} unit="$" changes={data?.coal} icon="oil" description="Geração de Energia" />
+              <MetricCard title="Cobre" value={data?.copper.current} unit="$" changes={data?.copper} icon="yields" description="Doutor Economia" />
+              <MetricCard title="Minério de Ferro" value={data?.ironOre.current} unit="$" changes={data?.ironOre} icon="yields" description="Construção Civil" />
+            </div>
+          </section>
+
+          {/* Battery Metals */}
+          <section>
+            <h2 className="text-[10px] font-bold text-white/30 uppercase tracking-[0.4em] mb-8 px-2 flex items-center gap-3">
+              <div className="w-1.5 h-1.5 bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
+              Metais de Bateria
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <MetricCard title="Lítio" value={data?.lithium.current} unit="$" changes={data?.lithium} icon="yields" description="Veículos Elétricos" />
+              <MetricCard title="Níquel" value={data?.nickel.current} unit="$" changes={data?.nickel} icon="yields" description="Aço e Baterias" />
+              <MetricCard title="Cobalto" value={data?.cobalt.current} unit="$" changes={data?.cobalt} icon="yields" description="Tecnologia" />
+            </div>
+          </section>
+
+          {/* Agriculture */}
+          <section>
+            <h2 className="text-[10px] font-bold text-white/30 uppercase tracking-[0.4em] mb-8 px-2 flex items-center gap-3">
+              <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full shadow-[0_0_10px_rgba(234,179,8,0.5)]" />
+              Commodities Agrícolas
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <MetricCard title="Soja" value={data?.soybeans.current} unit="$" changes={data?.soybeans} icon="gold" description="Proteína Global" />
+              <MetricCard title="Trigo" value={data?.wheat.current} unit="$" changes={data?.wheat} icon="gold" description="Base Alimentar" />
+              <MetricCard title="Milho" value={data?.corn.current} unit="$" changes={data?.corn} icon="gold" description="Ração e Energia" />
+              <MetricCard title="Açúcar" value={data?.sugar.current} unit="$" changes={data?.sugar} icon="gold" description="Energia e Alimentos" />
+              <MetricCard title="Café" value={data?.coffee.current} unit="$" changes={data?.coffee} icon="gold" description="Consumo Global" />
+            </div>
+          </section>
         </div>
 
         {/* Analysis Section */}
@@ -328,27 +368,71 @@ export default function App() {
 
           <aside className="space-y-6">
             {/* Reality Panel */}
-            <section className="bg-white/[0.02] border border-white/5 rounded-2xl p-6">
-              <h3 className="text-sm font-bold uppercase tracking-widest opacity-40 mb-6 flex items-center gap-2">
+            <section className="bg-white/[0.02] border border-white/5 rounded-2xl p-6 relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-4 opacity-5">
+                <Activity className="w-32 h-32" />
+              </div>
+
+              <h3 className="text-sm font-bold uppercase tracking-widest opacity-40 mb-8 flex items-center gap-2">
                 <Activity className="w-4 h-4" />
                 Painel de Realidade
               </h3>
-              <div className="space-y-6">
-                <StatusItem 
-                  label="Clima Global" 
-                  value={humanStatus?.climate} 
-                  color="text-emerald-500"
-                />
-                <StatusItem 
-                  label="Impacto no Bolso" 
-                  value={humanStatus?.impact} 
-                  color="text-orange-500"
-                />
-                <StatusItem 
-                  label="O que fazer?" 
-                  value={humanStatus?.action} 
-                  color="text-blue-500"
-                />
+
+              <div className="space-y-8 relative z-10">
+                {/* Chaos Meter */}
+                <div className="space-y-4">
+                  <div className="flex justify-between items-end">
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-mono uppercase opacity-40">Nível de Caos</span>
+                      <div className="text-3xl font-bold tracking-tighter flex items-center gap-2">
+                        {humanStatus?.chaosLevel || 0}%
+                        {humanStatus?.trend === 'up' && <TrendingUp className="w-5 h-5 text-red-500" />}
+                        {humanStatus?.trend === 'down' && <TrendingDown className="w-5 h-5 text-emerald-500" />}
+                      </div>
+                    </div>
+                    <div className={cn(
+                      "text-[10px] font-bold uppercase px-2 py-1 rounded border",
+                      (humanStatus?.chaosLevel || 0) > 70 ? "bg-red-500/10 border-red-500/20 text-red-500" :
+                      (humanStatus?.chaosLevel || 0) > 40 ? "bg-yellow-500/10 border-yellow-500/20 text-yellow-500" :
+                      "bg-emerald-500/10 border-emerald-500/20 text-emerald-500"
+                    )}>
+                      {(humanStatus?.chaosLevel || 0) > 70 ? "Crítico" :
+                       (humanStatus?.chaosLevel || 0) > 40 ? "Alerta" : "Estável"}
+                    </div>
+                  </div>
+                  
+                  <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                    <div 
+                      className={cn(
+                        "h-full transition-all duration-1000 ease-out",
+                        (humanStatus?.chaosLevel || 0) > 70 ? "bg-red-500" :
+                        (humanStatus?.chaosLevel || 0) > 40 ? "bg-yellow-500" : "bg-emerald-500"
+                      )}
+                      style={{ width: `${humanStatus?.chaosLevel || 0}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-6">
+                  <StatusItem 
+                    label="Clima Global" 
+                    value={humanStatus?.climate} 
+                    color={(humanStatus?.chaosLevel || 0) > 70 ? "text-red-500" : (humanStatus?.chaosLevel || 0) > 40 ? "text-yellow-500" : "text-emerald-500"}
+                    icon={<Activity className="w-4 h-4" />}
+                  />
+                  <StatusItem 
+                    label="Impacto no Bolso" 
+                    value={humanStatus?.impact} 
+                    color="text-orange-500"
+                    icon={<TrendingUp className="w-4 h-4" />}
+                  />
+                  <StatusItem 
+                    label="O que fazer?" 
+                    value={humanStatus?.action} 
+                    color="text-blue-500"
+                    icon={<Info className="w-4 h-4" />}
+                  />
+                </div>
               </div>
             </section>
 
@@ -384,11 +468,14 @@ export default function App() {
   );
 }
 
-function StatusItem({ label, value, color }: { label: string, value?: string, color: string }) {
+function StatusItem({ label, value, color, icon }: { label: string, value?: string, color: string, icon?: React.ReactNode }) {
   return (
-    <div className="space-y-1">
-      <div className="text-[10px] font-mono uppercase opacity-40">{label}</div>
-      <div className={cn("text-lg font-bold tracking-tight", color)}>
+    <div className="space-y-2">
+      <div className="flex items-center gap-2 text-[10px] font-mono uppercase opacity-40">
+        {icon}
+        {label}
+      </div>
+      <div className={cn("text-lg font-bold tracking-tight leading-tight", color)}>
         {value || "---"}
       </div>
     </div>
@@ -425,7 +512,7 @@ function MetricCard({ title, value, unit, changes, icon, description }: any) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-x-2 gap-y-4 mt-6">
         <MiniStat label="Dia" value={changes?.changeDay} />
         <MiniStat label="Semana" value={changes?.changeWeek} />
         <MiniStat label="Mês" value={changes?.changeMonth} />
@@ -443,14 +530,14 @@ function MetricCard({ title, value, unit, changes, icon, description }: any) {
 function MiniStat({ label, value }: { label: string, value: number }) {
   const isPositive = value > 0;
   return (
-    <div className="space-y-1">
-      <span className="text-[10px] font-mono uppercase opacity-40">{label}</span>
+    <div className="space-y-1 min-w-0">
+      <span className="text-[9px] font-mono uppercase opacity-40 block">{label}</span>
       <div className={cn(
-        "text-xs font-bold flex items-center gap-1",
+        "text-[11px] font-bold flex items-center gap-1 whitespace-nowrap",
         isPositive ? "text-emerald-500" : "text-red-500"
       )}>
-        {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-        {Math.abs(value)}%
+        {isPositive ? <TrendingUp className="w-2.5 h-2.5 shrink-0" /> : <TrendingDown className="w-2.5 h-2.5 shrink-0" />}
+        <span>{Math.abs(value)}%</span>
       </div>
     </div>
   );
